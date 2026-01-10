@@ -1,7 +1,7 @@
 import asyncio
 import queue
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 from jupyter_client.manager import KernelManager
 from jupyter_client.blocking.client import BlockingKernelClient
 from .interface import ExecutionResult, Kernel
@@ -57,12 +57,7 @@ class JupyterKernel(Kernel):
         msg_id = self._kc.execute(code)
 
         # 2. Poll for messages until idle
-        # We need to collect: stdout, stderr, display_data (images), execute_result
-        stdout_parts = []
-        stderr_parts = []
-        images = []
-        text_result = None
-        error_info = None
+        outputs: List[Dict[str, Any]] = []
         
         # Loop until we receive 'idle' status
         while True:
@@ -77,49 +72,61 @@ class JupyterKernel(Kernel):
                     continue
 
                 if msg_type == "stream":
-                    if content["name"] == "stdout":
-                        stdout_parts.append(content["text"])
-                    elif content["name"] == "stderr":
-                        stderr_parts.append(content["text"])
+                    outputs.append({
+                        "output_type": "stream",
+                        "name": content["name"],
+                        "text": content["text"]
+                    })
                 
                 elif msg_type == "execute_result":
-                    text_result = content["data"].get("text/plain")
+                    outputs.append({
+                        "output_type": "execute_result",
+                        "data": content["data"],
+                        "execution_count": content["execution_count"],
+                        "metadata": content.get("metadata", {})
+                    })
                 
                 elif msg_type == "display_data":
-                    data = content["data"]
-                    if "image/png" in data:
-                        images.append(data["image/png"])
-                    elif "text/plain" in data:
-                        # Some libraries use display_data for text output too
-                        stdout_parts.append(data["text/plain"])
+                    outputs.append({
+                        "output_type": "display_data",
+                        "data": content["data"],
+                        "metadata": content.get("metadata", {})
+                    })
 
                 elif msg_type == "error":
-                    error_info = {
+                    outputs.append({
+                        "output_type": "error",
                         "ename": content["ename"],
                         "evalue": content["evalue"],
                         "traceback": content["traceback"]
-                    }
+                    })
 
                 elif msg_type == "status":
                     if content["execution_state"] == "idle":
                         break
-            
+
             except queue.Empty:
-                # Timeout waiting for message
-                error_info = {"ename": "TimeoutError", "evalue": "Execution timed out", "traceback": []}
+                # If we timeout waiting for messages, we should probably stop
+                # and report an error.
+                outputs.append({
+                    "output_type": "error",
+                    "ename": "TimeoutError",
+                    "evalue": "Execution timed out",
+                    "traceback": []
+                })
                 break
             except Exception as e:
-                error_info = {"ename": type(e).__name__, "evalue": str(e), "traceback": []}
+                outputs.append({
+                    "output_type": "error",
+                    "ename": type(e).__name__,
+                    "evalue": str(e),
+                    "traceback": []
+                })
                 break
 
-        return ExecutionResult(
-            stdout="".join(stdout_parts),
-            stderr="".join(stderr_parts),
-            text_result=text_result,
-            images=images,
-            error=error_info
-        )
+        return ExecutionResult(outputs=outputs)
 
     async def aexecute(self, code: str) -> ExecutionResult:
-        """Execute code asynchronously by running the synchronous execute in a thread."""
+        """Execute a code snippet and return the result asynchronously."""
+        # Since jupyter_client blocking client is not async, we run it in a thread
         return await asyncio.to_thread(self.execute, code)

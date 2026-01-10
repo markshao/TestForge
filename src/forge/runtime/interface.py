@@ -1,18 +1,70 @@
 from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
+from enum import Enum
 from pydantic import BaseModel, Field
+
+class CellStatus(str, Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCESS = "success"
+    ERROR = "error"
+
+class Cell(BaseModel):
+    id: str
+    source: str
+    status: CellStatus
+    outputs: List[Dict[str, Any]] = Field(default_factory=list)
+    execution_count: Optional[int] = None
+
+class NotebookState(BaseModel):
+    cells: List[Cell]
+    # potentially other session metadata
 
 class ExecutionResult(BaseModel):
     """Represents the result of executing a code cell."""
-    stdout: str = ""
-    stderr: str = ""
-    text_result: Optional[str] = None  # The return value representation
-    images: List[str] = Field(default_factory=list)  # Base64 encoded images
-    html: Optional[str] = None
-    error: Optional[Dict[str, Any]] = None
+    outputs: List[Dict[str, Any]] = Field(default_factory=list)
 
     @property
     def is_success(self) -> bool:
-        return self.error is None
+        """Check if any output is an error."""
+        return not any(out.get("output_type") == "error" for out in self.outputs)
+
+    @property
+    def text_result(self) -> Optional[str]:
+        """Helper to get the last execute_result's text/plain content."""
+        for out in reversed(self.outputs):
+            if out.get("output_type") == "execute_result":
+                return out.get("data", {}).get("text/plain")
+        return None
+
+    @property
+    def stdout(self) -> str:
+        """Helper to combine all stdout streams."""
+        return "".join(out["text"] for out in self.outputs 
+                      if out.get("output_type") == "stream" and out.get("name") == "stdout")
+
+    @property
+    def stderr(self) -> str:
+        """Helper to combine all stderr streams."""
+        return "".join(out["text"] for out in self.outputs 
+                      if out.get("output_type") == "stream" and out.get("name") == "stderr")
+    
+    @property
+    def error(self) -> Optional[Dict[str, Any]]:
+        """Helper to get the first error output."""
+        for out in self.outputs:
+            if out.get("output_type") == "error":
+                return out
+        return None
+
+    @property
+    def images(self) -> List[str]:
+        """Helper to get all base64 encoded images from display_data or execute_result."""
+        imgs = []
+        for out in self.outputs:
+            data = out.get("data", {})
+            if "image/png" in data:
+                imgs.append(data["image/png"])
+        return imgs
 
 @runtime_checkable
 class Kernel(Protocol):
@@ -52,6 +104,10 @@ class NotebookSession(Protocol):
 
     def get_notebook_json(self) -> Dict[str, Any]:
         """Return the current state of the notebook in nbformat JSON."""
+        ...
+
+    def get_state(self) -> NotebookState:
+        """Return the current state of the notebook for UI rendering."""
         ...
 
     def save(self, path: str) -> None:

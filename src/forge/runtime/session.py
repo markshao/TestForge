@@ -1,6 +1,6 @@
 import nbformat
 from typing import Any, Dict
-from .interface import ExecutionResult, NotebookSession
+from .interface import ExecutionResult, NotebookSession, Cell, CellStatus, NotebookState
 from .kernel import JupyterKernel
 
 class JupyterNotebookSession(NotebookSession):
@@ -29,57 +29,51 @@ class JupyterNotebookSession(NotebookSession):
 
     async def add_cell(self, code: str) -> ExecutionResult:
         """Add a cell, execute it, and record the result asynchronously."""
-        # 1. Execute the code
-        result = await self.kernel.aexecute(code)
-
-        # 2. Create a notebook cell
+        # 1. Create a notebook cell with RUNNING status
         cell = nbformat.v4.new_code_cell(source=code)
-        
-        # 3. Populate outputs
-        outputs = []
-        
-        if result.stdout:
-            outputs.append(nbformat.v4.new_output(
-                output_type="stream",
-                name="stdout",
-                text=result.stdout
-            ))
-            
-        if result.stderr:
-            outputs.append(nbformat.v4.new_output(
-                output_type="stream",
-                name="stderr",
-                text=result.stderr
-            ))
-            
-        if result.text_result:
-            outputs.append(nbformat.v4.new_output(
-                output_type="execute_result",
-                data={"text/plain": result.text_result}
-            ))
-            
-        for img_base64 in result.images:
-            outputs.append(nbformat.v4.new_output(
-                output_type="display_data",
-                data={"image/png": img_base64}
-            ))
-            
-        if result.error:
-            outputs.append(nbformat.v4.new_output(
-                output_type="error",
-                ename=result.error["ename"],
-                evalue=result.error["evalue"],
-                traceback=result.error["traceback"]
-            ))
-
-        cell.outputs = outputs
+        # Store status in metadata so we can retrieve it later
+        cell.metadata["status"] = CellStatus.RUNNING
         self.notebook.cells.append(cell)
-        
-        return result
+
+        try:
+            # 2. Execute the code
+            result = await self.kernel.aexecute(code)
+            
+            # 3. Populate outputs directly from ExecutionResult
+            # Since ExecutionResult.outputs is already a list of nbformat-compliant dicts
+            
+            # Convert plain dicts to nbformat nodes for consistency, 
+            # though simple dict assignment often works in many tools.
+            # nbformat.from_dict handles validation better.
+            cell.outputs = [nbformat.from_dict(out) for out in result.outputs]
+
+            if result.is_success:
+                cell.metadata["status"] = CellStatus.SUCCESS
+            else:
+                cell.metadata["status"] = CellStatus.ERROR
+
+            return result
+        except Exception:
+            cell.metadata["status"] = CellStatus.ERROR
+            raise
 
     def get_notebook_json(self) -> Dict[str, Any]:
         """Return the current state of the notebook in nbformat JSON."""
         return dict(self.notebook)
+
+    def get_state(self) -> NotebookState:
+        """Return the current state of the notebook for UI rendering."""
+        cells = []
+        for nb_cell in self.notebook.cells:
+            status = nb_cell.metadata.get("status", CellStatus.PENDING)
+            cells.append(Cell(
+                id=nb_cell.id,
+                source=nb_cell.source,
+                status=status,
+                outputs=nb_cell.outputs,
+                execution_count=nb_cell.execution_count
+            ))
+        return NotebookState(cells=cells)
 
     def save(self, path: str) -> None:
         """Save the notebook to disk."""
