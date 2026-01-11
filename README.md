@@ -82,6 +82,31 @@ Unlike traditional keyword-driven or record-playback tools, TestForge operates o
     make install
     ```
 
+3.  **Configure Environment / 配置环境**
+
+    Copy the example environment file to `.env`:
+    复制示例环境变量文件到 `.env`：
+
+    ```bash
+    cp .env.example .env
+    ```
+
+    **Recommended Configuration / 推荐配置**:
+    We recommend using **Kimi AI** (Moonshot AI) for the best experience.
+    我们推荐使用 **Kimi AI** (Moonshot AI) 以获得最佳体验。
+
+    Update your `.env` file with:
+    更新您的 `.env` 文件：
+
+    ```ini
+    OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    OPENAI_BASE_URL=https://api.moonshot.cn/v1
+    OPENAI_MODEL_NAME=moonshot-v1-8k
+    ```
+
+    > You can get your API key from [platform.moonshot.cn](https://platform.moonshot.cn/).
+    > 您可以从 [platform.moonshot.cn](https://platform.moonshot.cn/) 获取 API Key。
+
 ### Running the Application / 运行应用
 
 1.  **Start the Backend API / 启动后端 API**
