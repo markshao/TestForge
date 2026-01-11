@@ -2,6 +2,7 @@ from typing import List, Dict, Any, Optional
 from langchain_core.tools import StructuredTool
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.prebuilt import create_react_agent
+from loguru import logger
 
 from ..llm import create_llm
 from .tools import get_page_content, run_playwright_code, GetPageContentToolInput, RunPlaywrightCodeToolInput
@@ -66,8 +67,12 @@ class AutomationAgent:
         """
         Execute a single automation step.
         """
+        logger.info(f"AutomationAgent [{self.task_id}] Received step: {step}")
+        
         # invoke the graph
         inputs = {"messages": [HumanMessage(content=step)]}
         # We use ainvoke for async execution
         result = await self.agent.ainvoke(inputs)
+        
+        logger.info(f"AutomationAgent [{self.task_id}] Step execution finished.")
         return result

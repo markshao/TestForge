@@ -4,6 +4,8 @@ TestForge is an autonomous testing agent designed to simplify and automate end-t
 
 TestForge 是一个自动化测试 Agent，旨在利用 Playwright 和 Jupyter Kernel 等现代工具简化端到端测试。它提供了一个基于 Web 的界面，用于管理测试用例、实时执行测试并可视化结果。
 
+![TestForge Screenshot](testforge_screenshot.jpg)
+
 ## Features / 功能特性
 
 - **Autonomous Execution**: Runs test cases automatically using a Jupyter-based runtime kernel.
@@ -14,6 +16,34 @@ TestForge 是一个自动化测试 Agent，旨在利用 Playwright 和 Jupyter K
   - **基于 YAML 的测试用例**: 使用简单易读的 YAML 格式定义测试场景。
 - **Real-time Feedback**: Live updates of execution status and logs via polling.
   - **实时反馈**: 通过轮询实时更新执行状态和日志。
+
+## Core Concepts / 核心概念
+
+### Agent Architecture / Agent 架构
+
+TestForge leverages a hierarchical multi-agent architecture powered by **LangChain DeepAgents**:
+
+- **ForgeAgent (Master Agent)**: The orchestrator responsible for breaking down high-level test cases (YAML steps) into executable goals. It manages the overall task lifecycle and delegates specific execution steps to sub-agents.
+- **AutomationAgent (Sub-Agent)**: A specialized ReAct agent equipped with Playwright tools. It receives specific goals from the Master Agent and autonomously executes browser interactions.
+
+TestForge 采用基于 **LangChain DeepAgents** 的分层多 Agent 架构：
+
+- **ForgeAgent (Master Agent)**: 编排者，负责将高层测试用例（YAML 步骤）拆解为可执行的目标。它管理整体任务生命周期，并将具体执行步骤委派给子 Agent。
+- **AutomationAgent (Sub-Agent)**: 配备 Playwright 工具的专用 ReAct Agent。它接收来自 Master Agent 的具体目标，并自主执行浏览器交互。
+
+### Code-Driven Execution / 代码驱动执行模式
+
+Unlike traditional keyword-driven or record-playback tools, TestForge operates on a **Code-Generation & Execution** paradigm:
+
+- **Iterative Coding**: The Agent "thinks" in Python code. To achieve a test step (e.g., "Search for 'Playwright'"), it generates valid Playwright Python code on the fly.
+- **Stateful Runtime**: This code is executed in a sandboxed Jupyter Kernel, allowing for stateful interactions and immediate feedback.
+- **Self-Correction**: If an error occurs, the Agent analyzes the traceback, corrects its code, and retries, mimicking a human developer's workflow.
+
+不同于传统的关键字驱动或录制回放工具，TestForge 采用 **代码生成与执行** 范式：
+
+- **迭代式编程**: Agent 以 Python 代码的形式进行“思考”。为了实现测试步骤（例如“搜索 'Playwright'”），它会即时生成有效的 Playwright Python 代码。
+- **有状态运行时**: 这些代码在沙箱化的 Jupyter Kernel 中执行，支持有状态的交互和即时反馈。
+- **自我修正**: 如果发生错误，Agent 会分析回溯信息，修正代码并重试，模拟人类开发者的工作流。
 
 ## Architecture / 架构
 

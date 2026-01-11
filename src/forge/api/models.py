@@ -16,11 +16,26 @@ class TaskStatus(str, Enum):
 class TaskBase(BaseModel):
     name: str
     description: Optional[str] = None
-    yaml_content: str  # The raw YAML content of the test case
+    yaml_content: Optional[str] = None  # The raw YAML content of the test case
 
 
 class TaskCreate(TaskBase):
-    pass
+    testcase_file: Optional[str] = None
+    yaml_content: Optional[str] = None
+
+
+class StepStatus(str, Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    ERROR = "error"
+
+
+class StepState(BaseModel):
+    index: int
+    content: str
+    status: StepStatus = StepStatus.PENDING
+    screenshot: Optional[str] = None  # URL or path to screenshot
 
 
 class Task(TaskBase):
@@ -31,6 +46,7 @@ class Task(TaskBase):
     
     # Execution info could be added here later
     execution_id: Optional[str] = None
+    steps: List[StepState] = []
 
     class Config:
         from_attributes = True

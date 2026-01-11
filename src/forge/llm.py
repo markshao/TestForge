@@ -40,7 +40,7 @@ def create_llm(
     """
     Create a LangChain ChatOpenAI instance with the specified configuration.
     Falls back to environment variables/settings if parameters are not provided.
-    
+
     Args:
         api_key: OpenAI API Key
         base_url: OpenAI Base URL

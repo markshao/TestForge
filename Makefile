@@ -17,7 +17,7 @@ start-web:
 test:
 	uv run pytest
 
-# clean:
-# 	rm -rf .venv
-# 	rm -rf web/node_modules
-# 	find . -type d -name "__pycache__" -exec rm -rf {} +
+clean:
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	rm -rf storage
+	rm -rf screenshots
