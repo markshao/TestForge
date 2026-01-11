@@ -1,0 +1,27 @@
+name: "Baidu Search Test"
+description: "Verify that Baidu search works correctly for Playwright"
+version: "1.0"
+
+test-env:
+  base_url: "https://www.baidu.com"
+  browser: "chromium"
+  viewport: { width: 1280, height: 720 }
+  headless: false
+  timeout: 30000
+
+steps:
+  - id: 1
+    type: action
+    content: "打开首页"
+
+  - id: 2
+    type: action
+    content: "在搜索框输入 'Playwright' 并点击搜索"
+
+  - id: 3
+    type: action
+    content: "点击第一条搜索结果"
+
+  - id: 4
+    type: verification
+    content: "检测页面的 title 包含 'Playwright' 关键字"

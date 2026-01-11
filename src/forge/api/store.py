@@ -1,0 +1,61 @@
+from typing import Dict, Optional, List
+import asyncio
+from datetime import datetime
+
+from .models import Task, TaskStatus
+
+class TaskStore:
+    def __init__(self):
+        self._tasks: Dict[str, Task] = {}
+        # Stores the runtime session/state associated with a task
+        # Value type will be defined later when we integrate runtime
+        self._executions: Dict[str, dict] = {} 
+
+    def create_task(self, task: Task) -> Task:
+        self._tasks[task.id] = task
+        self._executions[task.id] = {
+            "logs": [],
+            "cells": [],
+            "status": TaskStatus.PENDING
+        }
+        return task
+
+    def get_task(self, task_id: str) -> Optional[Task]:
+        return self._tasks.get(task_id)
+
+    def list_tasks(self, skip: int = 0, limit: int = 100) -> List[Task]:
+        tasks = list(self._tasks.values())
+        # Sort by created_at desc
+        tasks.sort(key=lambda x: x.created_at, reverse=True)
+        return tasks[skip : skip + limit]
+
+    def delete_task(self, task_id: str) -> bool:
+        if task_id in self._tasks:
+            del self._tasks[task_id]
+            if task_id in self._executions:
+                del self._executions[task_id]
+            return True
+        return False
+
+    def update_status(self, task_id: str, status: TaskStatus):
+        if task_id in self._tasks:
+            self._tasks[task_id].status = status
+            self._tasks[task_id].updated_at = datetime.now()
+
+    def get_execution_state(self, task_id: str) -> Optional[dict]:
+        return self._executions.get(task_id)
+
+    def append_log(self, task_id: str, level: str, message: str):
+        if task_id in self._executions:
+            self._executions[task_id]["logs"].append({
+                "timestamp": datetime.now(),
+                "level": level,
+                "message": message
+            })
+
+    def update_cells(self, task_id: str, cells: List[dict]):
+        if task_id in self._executions:
+            self._executions[task_id]["cells"] = cells
+
+# Global instance
+store = TaskStore()
