@@ -321,6 +321,7 @@ source = { editable = "." }
 dependencies = [
     { name = "deepagents" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "ipykernel" },
     { name = "jupyter-client" },
     { name = "nbformat" },
@@ -341,6 +342,7 @@ dev = [
 requires-dist = [
     { name = "deepagents", specifier = ">=0.3.5" },
     { name = "fastapi", specifier = ">=0.128.0" },
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "ipykernel", specifier = ">=7.1.0" },
     { name = "jupyter-client", specifier = ">=8.8.0" },
     { name = "nbformat", specifier = ">=5.10.4" },

@@ -1,66 +1,43 @@
 import { useParams } from "react-router-dom";
-import { ArrowLeft, Terminal, PlayCircle, CheckCircle2, AlertCircle, FileText } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Terminal, PlayCircle, CheckCircle2, AlertCircle, FileText, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { cn } from "../lib/utils";
-
-// Mock Data
-const MOCK_TESTCASE = `name: "Google Search Test"
-description: "Verify that Google search works correctly"
-version: "1.0"
-
-test-env:
-  base_url: "https://www.google.com"
-  browser: "chromium"
-  viewport: { width: 1280, height: 720 }
-  headless: false
-  timeout: 30000
-
-steps:
-  - id: 1
-    type: action
-    content: "Open Home Page"
-
-  - id: 2
-    type: action
-    content: "Search for 'Playwright'"
-`;
-
-const MOCK_LOGS = [
-  "[10:00:01] INFO: Starting session...",
-  "[10:00:02] INFO: Browser launched (chromium)",
-  "[10:00:03] INFO: Navigating to https://www.google.com",
-  "[10:00:05] INFO: Page loaded successfully",
-  "[10:00:06] INFO: Finding search box...",
-];
-
-const MOCK_CELLS = [
-  {
-    id: "cell-1",
-    status: "success",
-    code: `from playwright.async_api import async_playwright
-p = await async_playwright().start()
-browser = await p.chromium.launch(headless=False)
-page = await browser.new_page()`,
-    output: "Browser launched successfully."
-  },
-  {
-    id: "cell-2",
-    status: "running",
-    code: `await page.goto("https://www.google.com")
-print(f"Navigated to {page.url}")`,
-    output: ""
-  },
-  {
-    id: "cell-3",
-    status: "pending",
-    code: `# Generating code for step 2...`,
-    output: ""
-  }
-];
+import { tasksApi } from "../lib/api";
+import { useEffect } from "react";
 
 export function TaskDetailPage() {
   const { id } = useParams();
+  const queryClient = useQueryClient();
+
+  const { data: task, isLoading: isTaskLoading } = useQuery({
+    queryKey: ['task', id],
+    queryFn: () => tasksApi.get(id!)
+  });
+
+  const { data: execution, isLoading: isExecutionLoading } = useQuery({
+    queryKey: ['execution', id],
+    queryFn: () => tasksApi.getExecution(id!),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === 'running' || status === 'pending' ? 1000 : false;
+    },
+    enabled: !!task
+  });
+
+  const startMutation = useMutation({
+    mutationFn: tasksApi.start,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task', id] });
+      queryClient.invalidateQueries({ queryKey: ['execution', id] });
+    }
+  });
+
+  if (isTaskLoading) return <div>Loading...</div>;
+  if (!task) return <div>Task not found</div>;
+
+  const isRunning = task.status === 'running' || task.status === 'pending';
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
@@ -72,16 +49,20 @@ export function TaskDetailPage() {
           </Link>
           <div className="h-6 w-px bg-gray-200" />
           <div>
-            <h1 className="font-semibold text-sm">Google Search Test</h1>
+            <h1 className="font-semibold text-sm">{task.name}</h1>
             <p className="text-xs text-gray-500">Task ID: {id}</p>
           </div>
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
-            <PlayCircle className="h-3 w-3" /> Running
-          </span>
+          <StatusBadge status={task.status} />
         </div>
         <div className="flex items-center gap-2">
-           <Button size="sm" variant="outline">Stop</Button>
-           <Button size="sm">Rerun</Button>
+           {isRunning && <Button size="sm" variant="outline">Stop</Button>}
+           <Button 
+             size="sm" 
+             onClick={() => startMutation.mutate(id!)}
+             disabled={isRunning || startMutation.isPending}
+           >
+             {isRunning ? 'Running...' : 'Run Test'}
+           </Button>
         </div>
       </header>
 
@@ -94,38 +75,39 @@ export function TaskDetailPage() {
             <FileText className="h-3 w-3" /> Test Case
           </div>
           <div className="flex-1 overflow-auto p-4">
-            <pre className="text-xs font-mono text-gray-600 whitespace-pre-wrap">{MOCK_TESTCASE}</pre>
+            <pre className="text-xs font-mono text-gray-600 whitespace-pre-wrap">{task.yaml_content}</pre>
           </div>
         </div>
 
-        {/* Middle: Execution Notebook */}
-        <div className="flex-1 flex flex-col bg-gray-50/50 min-w-[400px]">
-           <div className="px-4 py-3 border-b bg-white font-medium text-xs text-gray-500 uppercase tracking-wider flex items-center gap-2">
-            <Terminal className="h-3 w-3" /> Live Execution
+        {/* Middle: Live Execution */}
+        <div className="flex-1 flex flex-col min-w-[400px] bg-gray-50/50">
+          <div className="px-4 py-3 border-b bg-white font-medium text-xs text-gray-500 uppercase tracking-wider flex items-center gap-2">
+            <PlayCircle className="h-3 w-3" /> Live Execution
           </div>
-          <div className="flex-1 overflow-auto p-6 space-y-6">
-            {MOCK_CELLS.map((cell) => (
-              <div key={cell.id} className="bg-white rounded-lg border shadow-sm overflow-hidden">
-                {/* Cell Header / Status */}
-                <div className="px-3 py-2 border-b bg-gray-50/50 flex items-center justify-between">
-                   <div className="flex items-center gap-2">
-                      <div className={cn("w-2 h-2 rounded-full", {
-                        "bg-green-500": cell.status === "success",
-                        "bg-yellow-500 animate-pulse": cell.status === "running",
-                        "bg-gray-300": cell.status === "pending"
-                      })} />
-                      <span className="text-xs font-medium text-gray-600 uppercase">{cell.status}</span>
-                   </div>
-                   <span className="text-xs font-mono text-gray-400">{cell.id}</span>
+          <div className="flex-1 overflow-auto p-6 space-y-4">
+            {execution?.cells.length === 0 && (
+               <div className="text-center text-gray-400 mt-20 text-sm">
+                 Ready to start execution...
+               </div>
+            )}
+            
+            {execution?.cells.map((cell) => (
+              <div key={cell.id} className="bg-white rounded-lg border shadow-sm overflow-hidden group">
+                {/* Cell Header */}
+                <div className="bg-gray-50 px-3 py-1.5 border-b flex items-center justify-between">
+                  <span className="text-xs font-mono text-gray-500">In [{cell.id}]</span>
+                  <CellStatus status={cell.status} />
                 </div>
+                
                 {/* Code Block */}
-                <div className="p-4 bg-[#f8f9fa] border-b">
+                <div className="p-3 bg-white">
                   <pre className="text-sm font-mono text-gray-800 whitespace-pre-wrap">{cell.code}</pre>
                 </div>
-                {/* Output Block (if any) */}
-                {(cell.output || cell.status === "success") && (
-                  <div className="p-3 bg-white text-xs font-mono text-gray-600 border-l-4 border-gray-100 ml-0">
-                    {cell.output}
+
+                {/* Output Block */}
+                {cell.output && (
+                  <div className="border-t bg-gray-50/50 p-3">
+                    <pre className="text-xs font-mono text-gray-600 whitespace-pre-wrap">{cell.output}</pre>
                   </div>
                 )}
               </div>
@@ -133,17 +115,30 @@ export function TaskDetailPage() {
           </div>
         </div>
 
-        {/* Right: Logs */}
-        <div className="w-1/4 border-l bg-white flex flex-col min-w-[250px]">
-          <div className="px-4 py-3 border-b bg-gray-50 font-medium text-xs text-gray-500 uppercase tracking-wider flex items-center gap-2">
-            <LogsIcon className="h-3 w-3" /> System Logs
+        {/* Right: System Logs */}
+        <div className="w-1/4 border-l bg-[#1e1e1e] flex flex-col min-w-[300px]">
+          <div className="px-4 py-3 border-b border-gray-700 bg-[#252526] font-medium text-xs text-gray-400 uppercase tracking-wider flex items-center gap-2">
+            <Terminal className="h-3 w-3" /> System Logs
           </div>
-          <div className="flex-1 overflow-auto p-4 bg-[#1e1e1e]">
-            {MOCK_LOGS.map((log, i) => (
-              <div key={i} className="text-xs font-mono text-gray-300 mb-1 font-light">
-                {log}
-              </div>
-            ))}
+          <div className="flex-1 overflow-auto p-4 font-mono text-xs space-y-1">
+             {execution?.logs.map((log, i) => (
+               <div key={i} className="flex gap-2">
+                 <span className="text-gray-500 shrink-0">
+                   [{new Date(log.timestamp).toLocaleTimeString()}]
+                 </span>
+                 <span className={cn(
+                   "break-all",
+                   log.level === "INFO" && "text-blue-400",
+                   log.level === "ERROR" && "text-red-400",
+                   log.level === "WARNING" && "text-yellow-400"
+                 )}>
+                   {log.message}
+                 </span>
+               </div>
+             ))}
+             {execution?.logs.length === 0 && (
+               <div className="text-gray-600 italic">Waiting for logs...</div>
+             )}
           </div>
         </div>
 
@@ -152,19 +147,31 @@ export function TaskDetailPage() {
   );
 }
 
-function FileIcon({ className }: { className?: string }) {
+function StatusBadge({ status }: { status: string }) {
+  if (status === "completed") {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-100">
+        <CheckCircle2 className="h-3 w-3" /> Finished
+      </span>
+    );
+  }
+  if (status === "running" || status === "pending") {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+        <Loader2 className="h-3 w-3 animate-spin" /> {status === 'running' ? 'Running' : 'Pending'}
+      </span>
+    );
+  }
   return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-      <polyline points="14 2 14 8 20 8" />
-    </svg>
-  )
+    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-100">
+      <AlertCircle className="h-3 w-3" /> {status}
+    </span>
+  );
 }
 
-function LogsIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
-  )
+function CellStatus({ status }: { status: string }) {
+  if (status === "success") return <CheckCircle2 className="h-3 w-3 text-green-500" />;
+  if (status === "running") return <Loader2 className="h-3 w-3 text-blue-500 animate-spin" />;
+  if (status === "error") return <AlertCircle className="h-3 w-3 text-red-500" />;
+  return <div className="h-2 w-2 rounded-full bg-gray-300" />;
 }

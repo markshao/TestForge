@@ -7,6 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "deepagents>=0.3.5",
     "fastapi>=0.128.0",
+    "httpx>=0.28.1",
     "ipykernel>=7.1.0",
     "jupyter-client>=8.8.0",
     "nbformat>=5.10.4",
