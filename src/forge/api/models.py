@@ -16,11 +16,12 @@ class TaskStatus(str, Enum):
 class TaskBase(BaseModel):
     name: str
     description: Optional[str] = None
-    yaml_content: str  # The raw YAML content of the test case
+    yaml_content: Optional[str] = None  # The raw YAML content of the test case
 
 
 class TaskCreate(TaskBase):
-    pass
+    testcase_file: Optional[str] = None
+    yaml_content: Optional[str] = None
 
 
 class Task(TaskBase):

@@ -1,0 +1,8 @@
+
+name: "Baidu Search Test"
+steps:
+  - content: "Open https://www.baidu.com"
+  - content: "Type 'test' in the search box"
+test-env:
+  base_url: "https://www.baidu.com"
+  headless: true
