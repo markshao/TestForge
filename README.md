@@ -1,5 +1,7 @@
 # TestForge
 
+<img src="web/public/logo.svg" align="right" width="120" />
+
 TestForge is an autonomous testing agent designed to simplify and automate end-to-end testing using modern tools like Playwright and Jupyter Kernels. It provides a web-based interface for managing test cases, executing them in real-time, and visualizing the results.
 
 TestForge 是一个自动化测试 Agent，旨在利用 Playwright 和 Jupyter Kernel 等现代工具简化端到端测试。它提供了一个基于 Web 的界面，用于管理测试用例、实时执行测试并可视化结果。
