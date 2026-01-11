@@ -92,15 +92,29 @@ export function TaskDetailPage() {
             )}
             
             {execution?.cells.map((cell) => (
-              <div key={cell.id} className="bg-white rounded-lg border shadow-sm overflow-hidden group">
+              <div 
+                key={cell.id} 
+                className={cn(
+                  "rounded-lg border shadow-sm overflow-hidden group transition-colors",
+                  cell.status === "running" && "bg-yellow-50 border-yellow-200",
+                  cell.status === "success" && "bg-green-50 border-green-200",
+                  cell.status === "error" && "bg-red-50 border-red-200",
+                  !["running", "success", "error"].includes(cell.status) && "bg-white"
+                )}
+              >
                 {/* Cell Header */}
-                <div className="bg-gray-50 px-3 py-1.5 border-b flex items-center justify-between">
+                <div className={cn(
+                  "px-3 py-1.5 border-b flex items-center justify-between",
+                  cell.status === "running" ? "bg-yellow-100/50" :
+                  cell.status === "success" ? "bg-green-100/50" :
+                  cell.status === "error" ? "bg-red-100/50" : "bg-gray-50"
+                )}>
                   <span className="text-xs font-mono text-gray-500">In [{cell.id}]</span>
                   <CellStatus status={cell.status} />
                 </div>
                 
                 {/* Code Block */}
-                <div className="p-3 bg-white">
+                <div className="p-3 bg-transparent">
                   <pre className="text-sm font-mono text-gray-800 whitespace-pre-wrap">{cell.code}</pre>
                 </div>
 

@@ -159,6 +159,39 @@ page = await context.new_page()
     except Exception as e:
         store.append_log(task_id, "ERROR", f"Agent execution failed: {e}")
         store.update_status(task_id, TaskStatus.FAILED)
+    finally:
+        # Cleanup
+        try:
+            store.append_log(task_id, "INFO", "Cleaning up resources...")
+            
+            # Close browser context/page if possible via a cell
+            # This ensures Playwright resources are released properly
+            cleanup_code = """
+try:
+    if 'browser' in locals():
+        await browser.close()
+    if 'playwright' in locals():
+        await playwright.stop()
+except Exception:
+    pass
+"""
+            # We try to run cleanup code, but don't fail if session is already dead
+            try:
+                if session:
+                    await session.add_cell(cleanup_code)
+            except Exception:
+                pass
+
+            # Stop the session (kernel)
+            if session:
+                session.stop()
+                store.append_log(task_id, "INFO", "Session stopped.")
+                
+            # Optionally remove session from store to free memory
+            # store.remove_session(task_id) 
+            
+        except Exception as e:
+            store.append_log(task_id, "WARNING", f"Cleanup failed: {e}")
 
 
 @router.post("/tasks/{task_id}/start", status_code=status.HTTP_202_ACCEPTED)
