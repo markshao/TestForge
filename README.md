@@ -187,3 +187,7 @@ Special thanks to:
 特别感谢：
 - **[Trae](https://www.trae.cn/)**: 真正的 AI 工程师，通过其强大的 SOLO 模式和智能 IDE 特性使本项目成为可能。
 - **Gemini-3**: 提供推理和编程能力的底层模型。
+
+## Demo / 演示
+
+[![TestForge Demo](https://img.youtube.com/vi/YuzHd3OEPFk/0.jpg)](https://www.youtube.com/watch?v=YuzHd3OEPFk)
