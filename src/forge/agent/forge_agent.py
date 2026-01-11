@@ -1,6 +1,7 @@
 from typing import List, Dict, Any
 from langchain_core.messages import HumanMessage
 from deepagents import CompiledSubAgent, create_deep_agent
+from loguru import logger
 
 from ..llm import create_llm
 from .automation_agent import AutomationAgent
@@ -49,6 +50,8 @@ class ForgeAgent:
         
         goal_text += "\nFor each step, verify the execution before moving to the next."
 
+        logger.info(f"ForgeAgent [{self.task_id}] Goal constructed:\n{goal_text}")
+
         # 2. Invoke the Deep Agent
         # The agent will:
         # - Plan: Break down the goal into tasks (mapping to steps)
@@ -57,7 +60,10 @@ class ForgeAgent:
         
         inputs = {"messages": [HumanMessage(content=goal_text)]}
         
+        logger.info(f"ForgeAgent [{self.task_id}] Starting DeepAgent execution...")
+
         # Use ainvoke to run the graph
         result = await self.agent.ainvoke(inputs)
         
+        logger.info(f"ForgeAgent [{self.task_id}] Execution finished.")
         return result
