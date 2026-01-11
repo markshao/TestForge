@@ -78,7 +78,7 @@ def test_delete_task(client):
 
 def test_start_task(client):
     # Create a task
-    create_res = client.post("/api/v1/tasks", json={"name": "Task 1", "yaml_content": "..."})
+    create_res = client.post("/api/v1/tasks", json={"name": "Task 1", "yaml_content": "steps: []"})
     task_id = create_res.json()["id"]
 
     # Start it

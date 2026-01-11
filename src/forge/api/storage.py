@@ -2,7 +2,7 @@ import os
 import yaml
 from typing import List, Dict, Optional
 
-STORAGE_DIR = os.path.join(os.path.dirname(__file__), "../storage/testcases")
+STORAGE_DIR = os.path.join(os.path.dirname(__file__), "../../../storage/testcases")
 
 def list_testcases() -> List[str]:
     """List all available testcase files."""

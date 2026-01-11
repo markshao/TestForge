@@ -1,9 +1,0 @@
-name: "Baidu Search Test"
-steps:
-  - content: "Open https://www.baidu.com"
-  - content: "Type 'playwright' in the search box"
-  - content: "Click the search button"
-  - content: "选中第一个搜索结果"
-test-env:
-  base_url: "https://www.baidu.com"
-  headless: false
