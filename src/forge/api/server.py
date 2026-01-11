@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
 
 from .routes import tasks
 
@@ -20,6 +22,12 @@ app.add_middleware(
 
 # Include routers
 app.include_router(tasks.router, prefix="/api/v1")
+
+# Mount screenshots directory
+screenshots_dir = os.path.join(os.getcwd(), "screenshots")
+if not os.path.exists(screenshots_dir):
+    os.makedirs(screenshots_dir)
+app.mount("/screenshots", StaticFiles(directory=screenshots_dir), name="screenshots")
 
 
 @app.get("/health")
