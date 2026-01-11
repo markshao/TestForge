@@ -47,6 +47,7 @@ playwright = await async_playwright().start()
 browser = await playwright.chromium.launch(headless={headless})
 context = await browser.new_context(base_url="{base_url}")
 page = await context.new_page()
+await page.goto("{base_url}")
 """
     await session.add_cell(init_code)
     

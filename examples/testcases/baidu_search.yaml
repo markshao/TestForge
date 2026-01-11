@@ -6,7 +6,7 @@ test-env:
   base_url: "https://www.baidu.com"
   browser: "chromium"
   viewport: { width: 1280, height: 720 }
-  headless: false
+  headless: true
   timeout: 30000
 
 steps:
