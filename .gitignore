@@ -104,3 +104,4 @@ screenshots/
 storage/
 
 .env
+.mypy_cache/

@@ -1,8 +1,11 @@
-.PHONY: install start-api start-web start-all test clean
+.PHONY: install install-browser start-api start-web start-all test clean
 
 install:
 	uv sync
 	cd web && npm install
+
+install-browser:
+	uv run playwright install chrome
 
 start-api:
 	uv run forge
