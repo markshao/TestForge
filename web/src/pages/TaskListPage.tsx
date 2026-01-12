@@ -11,7 +11,6 @@ export function TaskListPage() {
   const [newTaskName, setNewTaskName] = useState("");
   const [newTaskContent, setNewTaskContent] = useState(`name: "Baidu Search Test"
 steps:
-  - content: "Open https://www.baidu.com"
   - content: "Type 'test' in the search box"
   - content: "Click the search button"
 test-env:
