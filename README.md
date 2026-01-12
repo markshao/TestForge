@@ -82,7 +82,16 @@ Unlike traditional keyword-driven or record-playback tools, TestForge operates o
     make install
     ```
 
-3.  **Configure Environment / 配置环境**
+3.  **Install Browsers / 安装浏览器**
+
+    Install the necessary browsers for Playwright (Chrome):
+    安装 Playwright 所需的浏览器 (Chrome)：
+
+    ```bash
+    make install-browser
+    ```
+
+4.  **Configure Environment / 配置环境**
 
     Copy the example environment file to `.env`:
     复制示例环境变量文件到 `.env`：
